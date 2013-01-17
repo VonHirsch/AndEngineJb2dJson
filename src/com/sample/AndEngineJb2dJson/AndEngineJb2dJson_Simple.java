@@ -152,7 +152,7 @@ public class AndEngineJb2dJson_Simple {
 
 	public PhysicsWorld j2b2World(JSONObject worldValue) throws JSONException {
 					
-		PhysicsWorld world = new PhysicsWorld(new Vector2(0, SensorManager.GRAVITY_EARTH),  worldValue.getBoolean("allowSleep"), VELOCITY_ITERATIONS, POSITION_ITERATIONS);			
+		PhysicsWorld world = new PhysicsWorld(jsonToVec("gravity", worldValue),  worldValue.getBoolean("allowSleep"), VELOCITY_ITERATIONS, POSITION_ITERATIONS);			
 		
 		world.setAutoClearForces(worldValue.getBoolean("autoClearForces"));
 		world.setWarmStarting(worldValue.getBoolean("warmStarting"));
@@ -393,8 +393,7 @@ public class AndEngineJb2dJson_Simple {
 		}
 		
 		bodyDef.position.set(jsonToVec("position", bodyValue));
-		//negative because AndEngine is upside down to RUBE editor
-		bodyDef.angle = -jsonToFloat("angle", bodyValue);
+		bodyDef.angle = jsonToFloat("angle", bodyValue);
 		bodyDef.linearVelocity.set(jsonToVec("linearVelocity", bodyValue));
 		bodyDef.angularVelocity = jsonToFloat("angularVelocity", bodyValue);
 		bodyDef.linearDamping = jsonToFloat("linearDamping", bodyValue, -1, 0);
@@ -579,14 +578,11 @@ public class AndEngineJb2dJson_Simple {
 				//fixtureDef.shape = edgeShape;
 				//fixture = body.createFixture(fixtureDef);
 			} else {
+
 				PolygonShape polygonShape = new PolygonShape();
-				Debug.d("numVertices: " + numVertices);
-							
-				int j = 0;
-				
-				//AndEngine coordinates are upside down compared to RUBE editor, to fix negate Y value and reverse order of vectors to preserve ordering
-				for (int i = numVertices - 1; i >= 0; i--)		{								
-					vertices[numVertices - 1 - i] = jsonToVec("vertices", polygonValue, i);
+
+				for (int i = 0; i < numVertices; i++)		{								
+					vertices[i] = jsonToVec("vertices", polygonValue, i);
 				}
 			
 				polygonShape.set(vertices);
@@ -644,12 +640,7 @@ public class AndEngineJb2dJson_Simple {
 			}
 		}
 
-		//AndEngine coordinates are upside down compared to RUBE editor
-		return reverseY(vec);
-	}
-
-	private Vector2 reverseY(Vector2 v) {
-		return new Vector2(v.x, -v.y);
+		return vec;
 	}
 	
 	public Body[] getBodiesByName(String name) 

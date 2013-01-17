@@ -36,6 +36,7 @@ import org.andengine.entity.scene.Scene;
 import org.andengine.entity.util.FPSLogger;
 import org.andengine.extension.debugdraw.DebugRenderer;
 import org.andengine.extension.physics.box2d.PhysicsWorld;
+import org.andengine.extension.physics.box2d.util.constants.PhysicsConstants;
 import org.andengine.input.touch.TouchEvent;
 import org.andengine.input.touch.controller.MultiTouch;
 import org.andengine.input.touch.detector.PinchZoomDetector;
@@ -135,8 +136,10 @@ public class MainActivity extends SimpleBaseGameActivity implements IOnSceneTouc
 		this.mEngine.registerUpdateHandler(new FPSLogger());
 
 		this.mScene = new Scene();
-		this.mScene.setOnAreaTouchTraversalFrontToBack();
-
+		
+		//json files from RUBE are reversed in the Y direction
+		mScene.setScale(1, -1);
+		
 		initPhysics();
 		initControlAnalog();
 			
@@ -166,51 +169,6 @@ public class MainActivity extends SimpleBaseGameActivity implements IOnSceneTouc
 
 		this.mScene.setOnSceneTouchListener(this);
 		return this.mScene;
-	}
-	
-	private void initPhysics() {
-		
-		// if you want to play around with some of the other json's have a look at
-		// Chris's Jb2dJson-JBox2D-src project under jbox2d\jbox2d-testbed\src\main\java\org\jbox2d\testbed\tests\LoadRUBE...
-		loadJson(R.raw.car);
-		
-		mDebugRenderer = new DebugRenderer(mPhysicsWorld, getVertexBufferObjectManager());
-		this.mScene.attachChild(mDebugRenderer);
-		this.mScene.registerUpdateHandler(this.mPhysicsWorld);
-		
-	}
-	
-	private void loadJson(int resId) {
-		
-		AndEngineJb2dJson_Simple json = new AndEngineJb2dJson_Simple();
-		StringBuilder errorMsg = new StringBuilder();
-		this.mPhysicsWorld = json.readFromString(readRawTextFile(resId), errorMsg);
-		wheelBody = json.getBodyByName("carwheel");		
-		
-	}
-		
-	private void initControlAnalog() {
-
-		final AnalogOnScreenControl analogOnScreenControl = new AnalogOnScreenControl(0, CAMERA_HEIGHT - this.mOnScreenControlBaseTextureRegion.getHeight(), this.mZoomCamera, this.mOnScreenControlBaseTextureRegion, this.mOnScreenControlKnobTextureRegion, 0.1f, 200, this.getVertexBufferObjectManager(), new IAnalogOnScreenControlListener() {
-			@Override
-			public void onControlChange(final BaseOnScreenControl pBaseOnScreenControl, final float pValueX, final float pValueY) {				
-				driveState = pValueX;
-			}
-
-			@Override
-			public void onControlClick(final AnalogOnScreenControl pAnalogOnScreenControl) {
-				Debug.d("onControlClick");
-			}
-		});
-		analogOnScreenControl.getControlBase().setBlendFunction(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-		analogOnScreenControl.getControlBase().setAlpha(0.5f);
-		analogOnScreenControl.getControlBase().setScaleCenter(0, 128);
-		analogOnScreenControl.getControlBase().setScale(1.25f);
-		analogOnScreenControl.getControlKnob().setScale(1.25f);
-		analogOnScreenControl.refreshControlKnobPosition();
-		
-		mScene.setChildScene(analogOnScreenControl);
-		
 	}
 	
 	@Override
@@ -267,6 +225,52 @@ public class MainActivity extends SimpleBaseGameActivity implements IOnSceneTouc
 	// ===========================================================
 	// Methods
 	// ===========================================================
+	
+	private void initPhysics() {
+		
+		// if you want to play around with some of the other json's have a look at
+		// Chris's Jb2dJson-JBox2D-src project under jbox2d\jbox2d-testbed\src\main\java\org\jbox2d\testbed\tests\LoadRUBE...
+		loadJson(R.raw.car);
+		
+		mDebugRenderer = new DebugRenderer(mPhysicsWorld, getVertexBufferObjectManager());
+		this.mScene.attachChild(mDebugRenderer);
+		this.mScene.registerUpdateHandler(this.mPhysicsWorld);
+		
+	}
+	
+	private void loadJson(int resId) {
+		
+		AndEngineJb2dJson_Simple json = new AndEngineJb2dJson_Simple();
+		StringBuilder errorMsg = new StringBuilder();
+		this.mPhysicsWorld = json.readFromString(readRawTextFile(resId), errorMsg);
+		wheelBody = json.getBodyByName("carwheel");	
+		if (wheelBody != null) this.mZoomCamera.setCenter(wheelBody.getPosition().x*PhysicsConstants.PIXEL_TO_METER_RATIO_DEFAULT, wheelBody.getPosition().y*PhysicsConstants.PIXEL_TO_METER_RATIO_DEFAULT);
+		
+	}
+		
+	private void initControlAnalog() {
+
+		final AnalogOnScreenControl analogOnScreenControl = new AnalogOnScreenControl(0, CAMERA_HEIGHT - this.mOnScreenControlBaseTextureRegion.getHeight(), this.mZoomCamera, this.mOnScreenControlBaseTextureRegion, this.mOnScreenControlKnobTextureRegion, 0.1f, 200, this.getVertexBufferObjectManager(), new IAnalogOnScreenControlListener() {
+			@Override
+			public void onControlChange(final BaseOnScreenControl pBaseOnScreenControl, final float pValueX, final float pValueY) {				
+				driveState = -pValueX;
+			}
+
+			@Override
+			public void onControlClick(final AnalogOnScreenControl pAnalogOnScreenControl) {
+				Debug.d("onControlClick");
+			}
+		});
+		analogOnScreenControl.getControlBase().setBlendFunction(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+		analogOnScreenControl.getControlBase().setAlpha(0.5f);
+		analogOnScreenControl.getControlBase().setScaleCenter(0, 128);
+		analogOnScreenControl.getControlBase().setScale(1.25f);
+		analogOnScreenControl.getControlKnob().setScale(1.25f);
+		analogOnScreenControl.refreshControlKnobPosition();
+		
+		mScene.setChildScene(analogOnScreenControl);
+		
+	}
 
 	private String readRawTextFile(int resId)
     {
